@@ -6,7 +6,7 @@ interface IIndexs {
   type?: 'MONTH' | '',
 }
 
-class Database {
+export class Database {
   docker: {
     [propsname:string]: Table
   } = {}

@@ -1,56 +1,35 @@
-import { Table } from "./table";
+import { Database } from "./database";
 
-class Queryer {
-  getTable: (tableName: string) => Table
+export class Queryer {
+  DB: Database
   selects;
   body;
-  offsetAttr;
-  limitAttr;
+  offsetAttr: number;
+  limitAttr: number;
   actionType: 'C' | 'U' | 'R' | 'D';
   wheres;
-  constructor(getTable) {
-    this.getTable = getTable;
+  constructor(DB) {
+    this.DB = DB;
   }
   // select id, title from name where MONTH <> 2 limit 10 offset 10
   excute(tableName) {
-    const table = this.getTable(tableName);
+    const table = this.DB.get(tableName);
     const titles = table.titles;
     if(!table){
       throw new Error(`TABLE ${tableName} is not exist`)
     }
-    let newBody=[]
     switch(this.actionType) {
       case 'C':
-        newBody.length=0
-        for (let index = 0; index < titles.length; index++) {
-          const element = titles[index];
-          newBody[index] = this.body[element];
-        }
-        table.add(newBody);
+        table.add(this.body);
         return 1;
       case 'U':
-        newBody.length=0
-        for (let index = 0; index < titles.length; index++) {
-          const element = titles[index];
-          newBody[index] = this.body[element];
-        }
-        table.findAll(this.wheres)
-        table.update(newBody, [])
+        table.update(this.body, this.wheres)
         return 1;
       case 'R':
-        const datas = table.findAll(this.wheres, this.offset, this.limit)
-        datas.map((item)=>{
-          const rtn = {}
-          for (let index = 0; index < this.selects.length; index++) {
-            const element = this.selects[index];
-            rtn[element] = item[element]
-          }
-          return rtn
-        })
-        return [];
+        const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr)
+        return datas;
       case 'D':
-        table.findAll(this.wheres)
-        table.del([])
+        table.del(this.wheres)
         return 1;
       default:
         throw new Error("");

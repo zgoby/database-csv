@@ -60,12 +60,36 @@ export class Table {
     
   }
   add(element) {
-    if(this.emptys.length){
-      this.values[this.emptys[0]] = element
-      this.primarys.add({value: element, index: this.emptys[0]})
-    }else{
-      this.values.push(element)
-      this.primarys.add({value: element, index: this.values.length-1})
+    const newElement = []
+    for (let index = 0; index < this.titles.length; index++) {
+      const item = this.titles[index];
+      newElement.push(element[item])
     }
+
+    if(this.emptys.length){
+      this.values[this.emptys[0]] = newElement
+      this.primarys.add({value: element[this.primarys.key], index: this.emptys[0]})
+    }else{
+      this.values.push(newElement)
+      this.primarys.add({value: element[this.primarys.key], index: this.values.length-1})
+    }
+  }
+
+  findAll(wheres, selects?: string[], offset?:number, limit?:number){
+    // const newDatas = datas.map((item)=>{
+    //   const rtn = {}
+    //   for (let index = 0; index < this.selects.length; index++) {
+    //     const element = this.selects[index];
+    //     rtn[element] = item[element]
+    //   }
+    //   return rtn
+    // })
+    return []
+  }
+  update(body, wheres?: any){
+
+  }
+  del(wheres){
+
   }
 }

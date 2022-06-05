@@ -35,6 +35,7 @@ export class Indexs{
     }
     this.state = true;
   }
+  
   initData(array, {titles, primaryKey}) {
     for (let index = 0; index < array.length; index++) {
       const element = array[index];
@@ -44,6 +45,7 @@ export class Indexs{
     }
   }
   add({value, index}){
+    // index: 是主键
     if(this.type==='MONTH') {
       this.points[dayjs(value).month()+1].add({value, index})
     }else{

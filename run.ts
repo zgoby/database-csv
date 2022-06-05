@@ -1,6 +1,7 @@
 // const papaparse = require('papaparse')
 // const fs = require('fs')
 import { DB } from "./src/database";
+import { Queryer } from "./src/queryer";
 
 // // console.log();
 
@@ -65,12 +66,9 @@ interface IIndexs {
   type?: 'MONTH' | '',
 }
 
-function initTable(tablename, titles, primary?: string, indexs?: IIndexs[]) {
-  const database = DB.new(tablename, titles, primary, indexs);
-  return database
-}
 const titles = arr.shift()
+const database = DB.new('bill', titles, 'time', [{key: 'time', type: 'MONTH'}]);
 // 0,1,2,3,4,5,6
-console.log(
-  initTable('bill', titles, 'time', [{key: 'time', type: 'MONTH'}]).get('bill').initData(arr).indexsDocker.indexs[0].points
-);
+const queryer = new Queryer(database)
+
+queryer.select('time').where({MONTH: 2}).excute('bill')
