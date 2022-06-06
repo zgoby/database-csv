@@ -1,7 +1,7 @@
-import { Database } from "./database";
+import { Database } from './database';
 
 export class Queryer {
-  DB: Database
+  DB: Database;
   selects;
   body;
   offsetAttr: number;
@@ -15,52 +15,57 @@ export class Queryer {
   excute(tableName) {
     const table = this.DB.get(tableName);
     const titles = table.titles;
-    if(!table){
-      throw new Error(`TABLE ${tableName} is not exist`)
+    if (!table) {
+      throw new Error(`TABLE ${tableName} is not exist`);
     }
-    switch(this.actionType) {
+    switch (this.actionType) {
       case 'C':
         table.add(this.body);
         return 1;
       case 'U':
-        table.update(this.body, this.wheres)
+        table.update(this.body, this.wheres);
         return 1;
       case 'R':
-        const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr)
+        const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr);
         return datas;
       case 'D':
-        table.del(this.wheres)
+        table.del(this.wheres);
         return 1;
       default:
-        throw new Error("");
+        throw new Error(
+          'The actionType is not legal! you should use select, insert, update or del',
+        );
     }
   }
-  select(...selects){
-    this.selects = selects
-    return this
+  select(...selects) {
+    this.actionType = 'R';
+    this.selects = selects;
+    return this;
   }
-  insert(params){
-    this.body = params
-    return this
+  insert(params) {
+    this.actionType = 'C';
+    this.body = params;
+    return this;
   }
-  update(params){
-    this.body = params
-    return this
+  update(params) {
+    this.actionType = 'U';
+    this.body = params;
+    return this;
   }
-  offset(number){
-    this.offsetAttr = number
-    return this
+  offset(number) {
+    this.offsetAttr = number;
+    return this;
   }
-  limit(number){
-    this.limitAttr = number
-    return this
+  limit(number) {
+    this.limitAttr = number;
+    return this;
   }
-  del(){
-    this.actionType = 'D'
-    return this
+  del() {
+    this.actionType = 'D';
+    return this;
   }
-  where(parmas){
-    this.wheres = parmas
-    return this
+  where(parmas) {
+    this.wheres = parmas;
+    return this;
   }
 }

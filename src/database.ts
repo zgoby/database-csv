@@ -1,23 +1,22 @@
-import { Table } from "./table";
-
+import { Table } from './table';
 
 interface IIndexs {
-  key: string,
-  type?: 'MONTH' | '',
+  key: string;
+  type?: 'MONTH' | '';
 }
 
 export class Database {
   docker: {
-    [propsname:string]: Table
-  } = {}
-  new(tableName: string, titles: string[], primary: string, indexs?: IIndexs[]){
+    [propsname: string]: Table;
+  } = {};
+  new(tableName: string, titles: string[], primary: string, indexs?: IIndexs[]) {
     const table = new Table(tableName, titles, primary, indexs);
-    this.docker[tableName] = table
-    return this
+    this.docker[tableName] = table;
+    return table;
   }
-  get(tableName){
-    return this.docker[tableName]
+  get(tableName) {
+    return this.docker[tableName];
   }
 }
 
-export const DB = new Database()
+export const DB = new Database();
