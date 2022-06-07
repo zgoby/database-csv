@@ -53,7 +53,13 @@ export class Table {
   }
   // 设置索引
   initData(array) {
-    const newValues = array.map((item, index) => [index, ...item]);
+    const newValues = array.map((item, index) => {
+      if (this.isAutoPrimary) {
+        return [index, ...item];
+      }
+      return item;
+    });
+
     if (!this.init) {
       this.values = newValues;
       this.primarys.initData(this.values);
@@ -62,13 +68,14 @@ export class Table {
         primaryKey: this.primarys.key,
       });
       this.init = true;
-      this.autoPrimary = newValues.length - 1;
+      if (this.isAutoPrimary) this.autoPrimary = newValues.length - 1;
     }
     return this;
   }
 
   add(element) {
-    const newEleObj = { ...element, [this.primarys.key]: ++this.autoPrimary };
+    const primaryObj = this.isAutoPrimary ? { [this.primarys.key]: ++this.autoPrimary } : null;
+    const newEleObj = { ...element, ...primaryObj };
     const newEle = [];
     for (let index = 0; index < this.titles.length; index++) {
       const item = this.titles[index];
