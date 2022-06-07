@@ -1,14 +1,14 @@
-// const papaparse = require('papaparse')
-// const fs = require('fs')
+// const papaparse = require('papaparse');
+// const fs = require('fs');
 import { DB } from './src/database';
 import { Queryer } from './src/queryer';
 
 // // console.log();
 
 // papaparse.parse(fs.readFileSync('./src/bill.csv').toString(), {
-// 	complete: function(results) {
-// 		console.log("Finished:", results.data);
-// 	}
+//   complete: function (results) {
+//     console.log('Finished:', results.data);
+//   },
 // });
 
 const arr = [
@@ -68,10 +68,21 @@ interface IIndexs {
 
 const titles = arr.shift();
 
-const table = DB.new('bill', titles, 'time', [{ key: 'time', type: 'MONTH' }]).initData(arr);
+const table = DB.new('bill', titles, 'id', [{ key: 'time', type: 'MONTH' }]).initData(arr);
 // 0,1,2,3,4,5,6
 const queryer = new Queryer(DB);
+queryer
+  .insert({ type: '0', time: '1564502400000', category: '5il79e11628', amount: '1500' })
+  .excute('bill');
+queryer.where({ id: 3 }).del().excute('bill');
+// queryer.del().where({ type: '1', time: '1564502400000' }).excute('bill');
+queryer
+  .update({ type: '1', time: '1564502400000', category: '5il79e11628', amount: '1500' })
+  .where({ time: '1564502400000' })
+  .excute('bill');
 
-console.log(queryer.select('time').where({ time: '$MONTH_2' }).excute('bill'));
+console.log(
+  queryer.select('time').where({ category: '1bcddudhmh', time: '$MONTH_3' }).excute('bill'),
+);
 
-// console.log(table);
+// console.log(table.indexsDocker.indexs[0].points['2']);

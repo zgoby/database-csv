@@ -14,6 +14,9 @@ export class Queryer {
   // select id, title from name where MONTH <> 2 limit 10 offset 10
   excute(tableName) {
     const table = this.DB.get(tableName);
+    if (!table) {
+      throw new Error('Table is not exist! info:[excute(tableName)]');
+    }
     const titles = table.titles;
     if (!table) {
       throw new Error(`TABLE ${tableName} is not exist`);
@@ -42,7 +45,7 @@ export class Queryer {
     this.selects = selects;
     return this;
   }
-  insert(params) {
+  insert(params: { [name: string]: any }) {
     this.actionType = 'C';
     this.body = params;
     return this;
@@ -64,7 +67,7 @@ export class Queryer {
     this.actionType = 'D';
     return this;
   }
-  where(parmas) {
+  where(parmas = {}) {
     this.wheres = parmas;
     return this;
   }

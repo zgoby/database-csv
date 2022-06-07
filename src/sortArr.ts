@@ -8,11 +8,12 @@ export class SortArr {
       this.values.splice(index < 0 ? 0 : index, 0, element);
     }
   }
-  remove(element) {
+  delete(element) {
     const index = this.findIndex(element);
     if (index >= 0) {
       this.values.splice(index, 1);
     }
+    // console.log(this.values);
   }
   query(element) {
     const index = this.findIndex(element);
@@ -22,28 +23,26 @@ export class SortArr {
       return null;
     }
   }
-  findIndex(value, start = 0, end = this.values.length) {
-    const toIndex = Math.floor((end + start) / 2);
-    if (this.values.length) {
-      const compareRes = this.compare(value, this.values[toIndex].value);
-      if (compareRes === 0) {
-        return toIndex;
-      } else if (compareRes === -1) {
-        if (!this.values[toIndex - 1]) return -1;
-        if (value === this.values[toIndex - 1]) {
-          return toIndex - 1;
-        } else {
-          return this.findIndex(value, start, toIndex - 1);
-        }
+  findIndex(value) {
+    if (this.values.length <= 1) return this.values[0].value === value ? 0 : -1;
+    // 低位下标
+    let start = 0;
+    // 高位下标
+    let end = this.values.length - 1;
+
+    while (start <= end) {
+      // 中间下标
+      const toIndex = Math.floor((start + end) / 2);
+      if (value < this.values[toIndex].value) {
+        end = toIndex - 1;
+      } else if (value > this.values[toIndex].value) {
+        start = toIndex + 1;
       } else {
-        if (!this.values[toIndex + 1]) return -1;
-        if (value === this.values[toIndex + 1]) {
-          return toIndex + 1;
-        } else {
-          return this.findIndex(value, toIndex + 1, end);
-        }
+        // target === arr[midIndex]
+        return toIndex;
       }
-    } else return -1;
+    }
+    return -1;
   }
   findInsertIndex(element, start = 0, end = this.values.length) {
     const toIndex = Math.floor((end + start) / 2);
@@ -73,21 +72,23 @@ export class SortArr {
     const index = this.findIndex(value);
     let minusIndex = index,
       plusIndex = index;
-    arr.push(this.values[index]);
-    while (minusIndex > 0) {
-      minusIndex--;
-      if (this.values[minusIndex].value === value) {
-        arr.unshift(this.values[minusIndex]);
-      } else {
-        break;
+    if (index >= 0) {
+      arr.push(this.values[index]);
+      while (minusIndex > 0) {
+        minusIndex--;
+        if (this.values[minusIndex].value === value) {
+          arr.unshift(this.values[minusIndex]);
+        } else {
+          break;
+        }
       }
-    }
-    while (plusIndex < this.values.length - 1) {
-      plusIndex++;
-      if (this.values[plusIndex].value === value) {
-        arr.push(this.values[plusIndex]);
-      } else {
-        break;
+      while (plusIndex < this.values.length - 1) {
+        plusIndex++;
+        if (this.values[plusIndex].value === value) {
+          arr.push(this.values[plusIndex]);
+        } else {
+          break;
+        }
       }
     }
     return arr;

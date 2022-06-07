@@ -1,0 +1,9 @@
+{
+  "extends": "@zgo/tsconfig/tsconfig-node.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*", "src/app.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
+}

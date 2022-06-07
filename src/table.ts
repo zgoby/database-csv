@@ -9,8 +9,14 @@ export class Table {
   values = [];
   emptys = [];
   init = false;
+  isAutoPrimary = false;
+  autoPrimary = 0;
 
   constructor(tableName, titles, primary, indexs) {
+    if (titles.indexOf(primary) < 0) {
+      titles.unshift(primary);
+      this.isAutoPrimary = true;
+    }
     this.tableName = tableName;
     this.setTitles(titles);
     this.setPrimary(primary);
@@ -47,43 +53,45 @@ export class Table {
   }
   // 设置索引
   initData(array) {
+    const newValues = array.map((item, index) => [index, ...item]);
     if (!this.init) {
-      this.addMany(array);
+      this.values = newValues;
+      this.primarys.initData(this.values);
+      this.indexsDocker?.initData(this.values, {
+        titles: this.titles,
+        primaryKey: this.primarys.key,
+      });
       this.init = true;
+      this.autoPrimary = newValues.length - 1;
     }
     return this;
   }
 
-  addMany(array) {
-    this.values = [...array];
-    this.primarys.initData(this.values);
-    this.indexsDocker?.initData(this.values, {
-      titles: this.titles,
-      primaryKey: this.primarys.key,
-    });
-  }
   add(element) {
-    const newElement = [];
+    const newEleObj = { ...element, [this.primarys.key]: ++this.autoPrimary };
+    const newEle = [];
     for (let index = 0; index < this.titles.length; index++) {
       const item = this.titles[index];
-      newElement.push(element[item]);
+      newEle.push(newEleObj[item]);
     }
 
     if (this.emptys.length) {
-      this.values[this.emptys[0]] = newElement;
-      this.primarys.add({ value: element[this.primarys.key], index: this.emptys[0] });
+      this.values[this.emptys[0]] = newEle;
+      this.primarys.add({ value: newEleObj[this.primarys.key], index: this.emptys[0] });
     } else {
-      this.values.push(newElement);
-      this.primarys.add({ value: element[this.primarys.key], index: this.values.length - 1 });
+      this.values.push(newEle);
+      this.primarys.add({ value: newEleObj[this.primarys.key], index: this.values.length - 1 });
     }
+    this.indexsDocker.addItem(newEleObj, newEleObj[this.primarys.key]);
   }
-
-  findAll(wheres: { [name: string]: string }, selects?: string[], offset?: number, limit?: number) {
+  findIndexAll(wheres: { [name: string]: string }) {
     // wheres
     const enums = {},
       where = {},
       month = {};
+    let isWhere = false;
     for (const [key, value] of Object.entries(wheres)) {
+      isWhere = true;
       const val = /\$(MONTH|ENUM)_([0-9a-zA-Z]+)/.exec(value);
       if (val) {
         const newVal = val[2];
@@ -93,74 +101,143 @@ export class Table {
         where[key] = value;
       }
     }
-    const vals = [],
-      map = new Map();
+    if (!isWhere) {
+      return Object.keys(this.values);
+    }
+    const vals = [];
     for (const [key, value] of Object.entries(month)) {
       const item = this.indexsDocker.get(key);
       if (item) {
-        vals.push(item.get(value));
+        const items = item.get(value);
+        const set = new Set(items.map((item) => item.primary));
+        const points = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
+        vals.push(points);
       }
     }
     for (const [key, value] of Object.entries(enums)) {
       const item = this.indexsDocker.get(key);
       if (item) {
-        vals.push(item.get(value));
+        const items = item.get(value);
+        const set = new Set(items.map((item) => item.primary));
+        const points = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
+        vals.push(points);
       }
     }
     for (const [key, value] of Object.entries(where)) {
       if (this.primarys.isPrimary(key)) {
-        vals.push(this.primarys.query(value));
+        vals.push(this.primarys.queryByMany([value]).map((item) => item.index));
       } else {
         const item = this.indexsDocker.get(key);
         if (item) {
-          vals.push(item.get(value));
+          const items = item.get(value);
+          const set = new Set(items.map((item) => item.primary));
+          const points = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
+          vals.push(points);
         } else {
-          vals.push(this.values.filter((item) => item[key] === value));
+          const index = this.titles.indexOf(key);
+          if (index < 0) {
+            vals.push([]);
+          } else {
+            const tem = [];
+            for (let i = 0; i < this.values.length; i++) {
+              const item = this.values[i];
+              if (item && item[index] === value) {
+                tem.push(i);
+              }
+            }
+            vals.push(tem);
+          }
         }
       }
     }
-    let newVals;
-    if (vals.length <= 1) {
-      newVals = vals[0];
-    } else {
-    }
 
-    if (!newVals.values.length) {
+    const map = new Map();
+    let newVals = [];
+    if (vals.length === 1) {
+      newVals.push(...vals[0]);
+    } else {
+      for (let index = 0; index < vals.length; index++) {
+        const array = vals[index];
+        for (let index = 0; index < array.length; index++) {
+          const element = array[index];
+          if (map.has(element)) {
+            map.set(element, map.get(element) + 1);
+          } else {
+            map.set(element, 1);
+          }
+        }
+      }
+      for (const [k, v] of map) {
+        if (v === vals.length) {
+          newVals.push(k);
+        }
+      }
+    }
+    return newVals;
+  }
+  findValuesAll(newVals) {
+    if (!newVals.length) {
       return [];
     } else {
       const rtnArr = [];
-      if (!!newVals.values[0].primary) {
-        const set = new Set();
-        for (let index = 0; index < newVals.values.length; index++) {
-          const element = newVals.values[index];
-          set.add(element.primary);
+      for (let index = 0; index < newVals.length; index++) {
+        const element = newVals[index];
+        const obj = {};
+        for (let i = 0; i < this.titles.length; i++) {
+          const title = this.titles[i];
+          obj[title] = this.values[element][i];
         }
-        const primarys = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
-        for (let index = 0; index < primarys.length; index++) {
-          const element = primarys[index];
-          const obj = {};
-          for (let index = 0; index < this.titles.length; index++) {
-            const title = this.titles[index];
-            obj[title] = this.values[element][index];
+        rtnArr.push(obj);
+      }
+      return rtnArr;
+    }
+  }
+
+  findAll(wheres: { [name: string]: string }, selects?: string[], offset?: number, limit?: number) {
+    let newVals = this.findIndexAll(wheres);
+    return this.findValuesAll(newVals);
+  }
+  update(body, wheres?: any) {
+    const hasPrimary = !!body[this.primarys.key];
+    // console.log(hasPrimary);
+    const indexs = this.findIndexAll(wheres);
+    const elements = this.findValuesAll(indexs);
+    if (hasPrimary) {
+      this.del(wheres);
+      const el = elements.map((item) => ({ ...item, ...body }));
+      for (let index = 0; index < el.length; index++) {
+        const it = el[index];
+        this.add(it);
+      }
+    } else {
+      for (let index = 0; index < elements.length; index++) {
+        const element = elements[index];
+        for (let j = 0; j < this.titles.length; j++) {
+          const title = this.titles[j];
+          if (body[title]) {
+            this.values[indexs[index]][j] = body[title];
           }
-          rtnArr.push(obj);
+          // console.log(this.values[indexs[index]][j]);
         }
-        return rtnArr;
-      } else {
-        const primarys = newVals.values.map((item) => item.index);
-        for (let index = 0; index < primarys.length; index++) {
-          const element = primarys[index];
-          const obj = {};
-          for (let index = 0; index < this.titles.length; index++) {
-            const title = this.titles[index];
-            obj[title] = this.values[element][index];
-          }
-          rtnArr.push(obj);
-        }
-        return rtnArr;
+
+        this.indexsDocker.deleteItem(element, element[this.primarys.key]);
+        // console.log(this.indexsDocker.indexs[0].points['2'], element, element[this.primarys.key]);
+        this.indexsDocker.addItem(element, element[this.primarys.key]);
       }
     }
   }
-  update(body, wheres?: any) {}
-  del(wheres) {}
+  del(wheres) {
+    const indexs = this.findIndexAll(wheres);
+    const vaules = this.findValuesAll(indexs);
+    for (let index = 0; index < indexs.length; index++) {
+      const element = indexs[index];
+      const val = vaules[index];
+      delete this.values[element];
+      this.primarys.delete(val);
+      this.indexsDocker.deleteItem(val, val[this.primarys.key]);
+    }
+  }
+  insert(body) {
+    this.add(body);
+  }
 }

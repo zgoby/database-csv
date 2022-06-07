@@ -1,8 +1,22 @@
-import * as dayjs from 'dayjs';
+import dayjs from 'dayjs';
 import { SortArr } from './sortArr';
 
 export class IndexsDocker {
   indexs: Indexs[] = [];
+  addItem(item, primary) {
+    for (let index = 0; index < this.indexs.length; index++) {
+      const element = this.indexs[index];
+      const title = element.title;
+      element.add({ value: item[title], primary });
+    }
+  }
+  deleteItem(item, primary) {
+    for (let index = 0; index < this.indexs.length; index++) {
+      const element = this.indexs[index];
+      const title = element.title;
+      element.delete({ value: item[title], primary });
+    }
+  }
   add(index) {
     this.indexs.push(index);
   }
@@ -23,7 +37,7 @@ export class IndexsDocker {
 export class Indexs {
   state = false;
   title;
-  points: any;
+  points: SortArr | any;
   type: 'MONTH' | 'ENUM' | ''; // MONTH is a sepcial ENUM
   constructor({ key, type }) {
     this.title = key;
@@ -42,9 +56,9 @@ export class Indexs {
   public get(value) {
     // index: 是主键
     if (this.type === 'MONTH') {
-      return this.points[value];
+      return this.points[dayjs(value).month() + 1].values;
     } else {
-      return this.points.query(value);
+      return this.points.findAll([value]);
     }
   }
 
@@ -62,6 +76,15 @@ export class Indexs {
       this.points[dayjs(value).month() + 1].add({ value, primary });
     } else {
       this.points.add({ value, primary });
+    }
+  }
+  delete(element) {
+    const val = element[this.title];
+    const primary = element['primary'];
+    if (this.type === 'MONTH') {
+      this.points[dayjs(val).month() + 1].delete(primary);
+    } else {
+      this.points.delete(primary);
     }
   }
 }

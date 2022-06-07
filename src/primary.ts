@@ -4,6 +4,7 @@ export class Primary {
   state = false;
   key = '';
   keyIndex;
+  keys = new Map();
   points: SortArr;
   constructor(key, primaryIndex) {
     this.key = key;
@@ -14,22 +15,38 @@ export class Primary {
   isPrimary(key) {
     return key === this.key;
   }
+  getPrimary(element) {
+    return element[this.keyIndex];
+  }
   initData(originData) {
     for (let index = 0; index < originData.length; index++) {
       const element = originData[index];
-      this.add({ value: element[this.keyIndex], index });
+      this.add({ value: this.getPrimary(element), index });
     }
   }
   add(element) {
+    if (this.keys.has(element.value)) {
+      throw new Error('Duplicate primary key');
+    } else {
+      this.keys.set(element.value, true);
+    }
     this.points.add(element);
   }
-  remove(value) {
-    this.points.remove(value);
+  delete(element) {
+    this.points.delete(element[this.key]);
   }
   query(value) {
     return this.points.query(value);
   }
   queryByMany(arr) {
+    const newArr = [];
+    for (let index = 0; index < arr.length; index++) {
+      const element = arr[index];
+      newArr.push(...this.points.findAll(element));
+    }
+    return newArr;
+  }
+  queryIndexByMany(arr) {
     const newArr = [];
     for (let index = 0; index < arr.length; index++) {
       const element = arr[index];
