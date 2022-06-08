@@ -83,7 +83,8 @@ interface IIndexs {
 
 const titles = arr.shift();
 
-const table = DB.new('bill', titles, 'id', [{ key: 'time', type: 'MONTH' }]).initData(arr);
+DB.new('bill', titles, 'id', [{ key: 'time', type: 'MONTH' }]);
+DB.initData('bill', arr);
 // 0,1,2,3,4,5,6
 const queryer = new Queryer(DB);
 queryer
