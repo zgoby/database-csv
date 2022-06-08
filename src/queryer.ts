@@ -11,6 +11,7 @@ export class Queryer {
   constructor(DB) {
     this.DB = DB;
   }
+
   // select id, title from name where MONTH <> 2 limit 10 offset 10
   excute(tableName) {
     const table = this.DB.get(tableName);
@@ -21,24 +22,38 @@ export class Queryer {
     if (!table) {
       throw new Error(`TABLE ${tableName} is not exist`);
     }
+    let rtn;
     switch (this.actionType) {
       case 'C':
         table.add(this.body);
-        return 1;
+        rtn = 1;
       case 'U':
         table.update(this.body, this.wheres);
-        return 1;
+        rtn = 1;
       case 'R':
         const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr);
-        return datas;
+        rtn = datas;
       case 'D':
         table.del(this.wheres);
-        return 1;
+        rtn = 1;
       default:
-        throw new Error(
+        rtn = new Error(
           'The actionType is not legal! you should use select, insert, update or del',
         );
     }
+    this.unMount();
+    if (rtn instanceof Error) {
+      throw rtn;
+    }
+    return rtn;
+  }
+  unMount() {
+    this.selects = undefined;
+    this.body = undefined;
+    this.offsetAttr = undefined;
+    this.limitAttr = undefined;
+    this.actionType = undefined;
+    this.wheres = undefined;
   }
   select(...selects) {
     this.actionType = 'R';
