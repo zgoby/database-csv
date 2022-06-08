@@ -14,39 +14,40 @@ export class Queryer {
 
   // select id, title from name where MONTH <> 2 limit 10 offset 10
   excute(tableName) {
-    const table = this.DB.get(tableName);
-    if (!table) {
-      throw new Error(`TABLE ${tableName} is not exist`);
+    try {
+      const table = this.DB.get(tableName);
+      if (!table) {
+        throw new Error(`TABLE ${tableName} is not exist`);
+      }
+      let rtn;
+      switch (this.actionType) {
+        case 'C':
+          table.add(this.body);
+          rtn = 1;
+          break;
+        case 'U':
+          table.update(this.body, this.wheres);
+          rtn = 1;
+          break;
+        case 'R':
+          const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr);
+          rtn = datas;
+          break;
+        case 'D':
+          table.del(this.wheres);
+          rtn = 1;
+          break;
+        default:
+          throw new Error(
+            'The actionType is not legal! you should use select, insert, update or del',
+          );
+      }
+      return rtn;
+    } catch (error) {
+      throw error;
+    } finally {
+      this.unMount();
     }
-    let rtn;
-    switch (this.actionType) {
-      case 'C':
-        table.add(this.body);
-        rtn = 1;
-        break;
-      case 'U':
-        table.update(this.body, this.wheres);
-        rtn = 1;
-        break;
-      case 'R':
-        const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr);
-        rtn = datas;
-        break;
-      case 'D':
-        table.del(this.wheres);
-        rtn = 1;
-        break;
-      default:
-        rtn = new Error(
-          'The actionType is not legal! you should use select, insert, update or del',
-        );
-        break;
-    }
-    this.unMount();
-    if (rtn instanceof Error) {
-      throw rtn;
-    }
-    return rtn;
   }
   unMount() {
     this.selects = undefined;
