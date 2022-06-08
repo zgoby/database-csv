@@ -16,10 +16,6 @@ export class Queryer {
   excute(tableName) {
     const table = this.DB.get(tableName);
     if (!table) {
-      throw new Error('Table is not exist! info:[excute(tableName)]');
-    }
-    const titles = table.titles;
-    if (!table) {
       throw new Error(`TABLE ${tableName} is not exist`);
     }
     let rtn;
@@ -27,19 +23,24 @@ export class Queryer {
       case 'C':
         table.add(this.body);
         rtn = 1;
+        break;
       case 'U':
         table.update(this.body, this.wheres);
         rtn = 1;
+        break;
       case 'R':
         const datas = table.findAll(this.wheres, this.selects, this.offsetAttr, this.limitAttr);
         rtn = datas;
+        break;
       case 'D':
         table.del(this.wheres);
         rtn = 1;
+        break;
       default:
         rtn = new Error(
           'The actionType is not legal! you should use select, insert, update or del',
         );
+        break;
     }
     this.unMount();
     if (rtn instanceof Error) {
