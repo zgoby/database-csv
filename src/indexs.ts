@@ -23,8 +23,8 @@ export class IndexsDocker {
   has(title) {
     return this.indexs.findIndex((item) => item.title === title) !== -1;
   }
-  get(title) {
-    return this.indexs.find((item) => item.title === title);
+  get(title, type = '') {
+    return this.indexs.find((item) => item.title === title && item.type === type);
   }
   initData(data, infos) {
     for (let index = 0; index < this.indexs.length; index++) {

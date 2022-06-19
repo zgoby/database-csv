@@ -67,6 +67,10 @@ export class SortArr {
       }
     }
   }
+  findOne(value) {
+    const index = this.findIndex(value);
+    if (index >= 0) return this.values[index];
+  }
   findAll(value) {
     const arr = [];
     const index = this.findIndex(value);

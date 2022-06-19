@@ -12,6 +12,9 @@ export class Database {
   new(tableName: string, titles: string[], primary: string, indexs?: IIndexs[]) {
     try {
       const table = new Table(tableName, titles, primary, indexs);
+      if (this.docker[tableName]) {
+        throw new Error(`Table: [${tableName}] is already exist!`);
+      }
       this.docker[tableName] = table;
     } catch (error) {
       throw error;

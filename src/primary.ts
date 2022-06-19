@@ -42,7 +42,8 @@ export class Primary {
     const newArr = [];
     for (let index = 0; index < arr.length; index++) {
       const element = arr[index];
-      newArr.push(...this.points.findAll(element));
+      const primaryItem = this.points.findOne(element);
+      if (primaryItem) newArr.push(primaryItem);
     }
     return newArr;
   }

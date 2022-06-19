@@ -91,14 +91,12 @@ export class Table {
     }
     this.indexsDocker.addItem(newEleObj, newEleObj[this.primarys.key]);
   }
-  findIndexAll(wheres: { [name: string]: string }) {
+  getQuery(wheres: { [name: string]: string }) {
     // wheres
     const enums = {},
       where = {},
       month = {};
-    let isWhere = false;
     for (const [key, value] of Object.entries(wheres)) {
-      isWhere = true;
       const val = /\$(MONTH|ENUM)_([0-9a-zA-Z]+)/.exec(value);
       if (val) {
         const newVal = val[2];
@@ -108,56 +106,13 @@ export class Table {
         where[key] = value;
       }
     }
-    if (!isWhere) {
-      return Object.keys(this.values);
-    }
-    const vals = [];
-    for (const [key, value] of Object.entries(month)) {
-      const item = this.indexsDocker.get(key);
-      if (item) {
-        const items = item.get(value);
-        const set = new Set(items.map((item) => item.primary));
-        const points = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
-        vals.push(points);
-      }
-    }
-    for (const [key, value] of Object.entries(enums)) {
-      const item = this.indexsDocker.get(key);
-      if (item) {
-        const items = item.get(value);
-        const set = new Set(items.map((item) => item.primary));
-        const points = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
-        vals.push(points);
-      }
-    }
-    for (const [key, value] of Object.entries(where)) {
-      if (this.primarys.isPrimary(key)) {
-        vals.push(this.primarys.queryByMany([value]).map((item) => item.index));
-      } else {
-        const item = this.indexsDocker.get(key);
-        if (item) {
-          const items = item.get(value);
-          const set = new Set(items.map((item) => item.primary));
-          const points = this.primarys.queryByMany(Array.from(set)).map((item) => item.index);
-          vals.push(points);
-        } else {
-          const index = this.titles.indexOf(key);
-          if (index < 0) {
-            vals.push([]);
-          } else {
-            const tem = [];
-            for (let i = 0; i < this.values.length; i++) {
-              const item = this.values[i];
-              if (item && item[index] === value) {
-                tem.push(i);
-              }
-            }
-            vals.push(tem);
-          }
-        }
-      }
-    }
-
+    return {
+      where,
+      enums,
+      month,
+    };
+  }
+  andData(vals) {
     const map = new Map();
     let newVals = [];
     if (vals.length === 1) {
@@ -167,32 +122,86 @@ export class Table {
         const array = vals[index];
         for (let index = 0; index < array.length; index++) {
           const element = array[index];
-          if (map.has(element)) {
-            map.set(element, map.get(element) + 1);
+          const { index: recordIndex } = element;
+          if (map.has(recordIndex)) {
+            map.set(recordIndex, { ...element, __count: map.get(recordIndex).__count + 1 });
           } else {
-            map.set(element, 1);
+            map.set(recordIndex, { ...element, __count: 1 });
           }
         }
       }
-      for (const [k, v] of map) {
-        if (v === vals.length) {
-          newVals.push(k);
+      for (const [_, v] of map) {
+        if (v.__count === vals.length) {
+          newVals.push(v);
         }
       }
     }
     return newVals;
   }
-  findValuesAll(newVals) {
-    if (!newVals.length) {
+  findPrimaryAll(wheres: { [name: string]: string }): { index: number; value: number | string }[] {
+    const query = this.getQuery(wheres);
+    const { month, where, enums } = query;
+    const vals = [];
+    for (const [key, value] of Object.entries(month)) {
+      const item = this.indexsDocker.get(key, 'MONTH');
+      if (item) {
+        const items = item.get(value);
+        const set = new Set(items.map((item) => item.primary));
+        const points = this.primarys.queryByMany(Array.from(set));
+        vals.push(points);
+      }
+    }
+
+    for (const [key, value] of Object.entries(enums)) {
+      const item = this.indexsDocker.get(key, 'ENUM');
+      if (item) {
+        const items = item.get(value);
+        const set = new Set(items.map((item) => item.primary));
+        const points = this.primarys.queryByMany(Array.from(set));
+        vals.push(points);
+      }
+    }
+    for (const [key, value] of Object.entries(where)) {
+      if (this.primarys.isPrimary(key)) {
+        vals.push(this.primarys.queryByMany([value]));
+      } else {
+        const item = this.indexsDocker.get(key, '');
+        if (item) {
+          const items = item.get(value);
+          const set = new Set(items.map((item) => item.primary));
+          const points = this.primarys.queryByMany(Array.from(set));
+          vals.push(points);
+        } else {
+          const titleIndex = this.titles.indexOf(key);
+          if (titleIndex < 0) {
+            vals.push([]);
+          } else {
+            const tem = [];
+            const primaryIndex = this.titles.indexOf(this.primarys.key);
+            for (let i = 0; i < this.values.length; i++) {
+              const recordItem = this.values[i];
+              if (recordItem && recordItem[titleIndex] === value) {
+                tem.push({ value: recordItem[primaryIndex], index: i });
+              }
+            }
+            vals.push(tem);
+          }
+        }
+      }
+    }
+    return this.andData(vals);
+  }
+  findValuesAll(primarys) {
+    if (!primarys || !primarys.length) {
       return [];
     } else {
       const rtnArr = [];
-      for (let index = 0; index < newVals.length; index++) {
-        const element = newVals[index];
+      for (let i = 0; i < primarys.length; i++) {
+        const { index } = primarys[i];
         const obj = {};
-        for (let i = 0; i < this.titles.length; i++) {
-          const title = this.titles[i];
-          obj[title] = this.values[element][i];
+        for (let j = 0; j < this.titles.length; j++) {
+          const title = this.titles[j];
+          obj[title] = this.values[index][j];
         }
         rtnArr.push(obj);
       }
@@ -201,14 +210,15 @@ export class Table {
   }
 
   findAll(wheres: { [name: string]: string }, selects?: string[], offset?: number, limit?: number) {
-    let newVals = this.findIndexAll(wheres);
-    return this.findValuesAll(newVals);
+    if (!wheres || !Object.values(wheres).length) return [];
+    let primarys = this.findPrimaryAll(wheres);
+    return this.findValuesAll(primarys);
   }
   update(body, wheres?: any) {
     const hasPrimary = !!body[this.primarys.key];
     // console.log(hasPrimary);
-    const indexs = this.findIndexAll(wheres);
-    const elements = this.findValuesAll(indexs);
+    const primarys = this.findPrimaryAll(wheres);
+    const elements = this.findValuesAll(primarys);
     if (hasPrimary) {
       this.del(wheres);
       const el = elements.map((item) => ({ ...item, ...body }));
@@ -217,16 +227,14 @@ export class Table {
         this.add(it);
       }
     } else {
-      for (let index = 0; index < elements.length; index++) {
-        const element = elements[index];
+      for (let i = 0; i < elements.length; i++) {
+        const element = elements[i];
         for (let j = 0; j < this.titles.length; j++) {
           const title = this.titles[j];
           if (body[title]) {
-            this.values[indexs[index]][j] = body[title];
+            this.values[primarys[i]['index']][j] = body[title];
           }
-          // console.log(this.values[indexs[index]][j]);
         }
-
         this.indexsDocker.deleteItem(element, element[this.primarys.key]);
         // console.log(this.indexsDocker.indexs[0].points['2'], element, element[this.primarys.key]);
         this.indexsDocker.addItem(element, element[this.primarys.key]);
@@ -234,13 +242,14 @@ export class Table {
     }
   }
   del(wheres) {
-    const indexs = this.findIndexAll(wheres);
-    const vaules = this.findValuesAll(indexs);
-    for (let index = 0; index < indexs.length; index++) {
-      const element = indexs[index];
-      const val = vaules[index];
-      delete this.values[element];
+    const primarys = this.findPrimaryAll(wheres);
+    const vaules = this.findValuesAll(primarys);
+    for (let i = 0; i < primarys.length; i++) {
+      const primaryItem = primarys[i];
+      const val = vaules[i];
+      delete this.values[primaryItem['index']];
       this.primarys.delete(val);
+
       this.indexsDocker.deleteItem(val, val[this.primarys.key]);
     }
   }

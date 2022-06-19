@@ -88,25 +88,12 @@ DB.initData('bill', arr);
 // 0,1,2,3,4,5,6
 const queryer = new Queryer(DB);
 queryer
-  .insert({ type: '0', time: '1564502400000', category: '5il79e11628', amount: '1500' })
+  .insert({ type: '0', time: '1574870400000', category: '5il79e11628', amount: '1500000' })
   .excute('bill');
-queryer.where({ id: 3 }).del().excute('bill');
-// queryer.del().where({ type: '1', time: '1564502400000' }).excute('bill');
+// queryer.where({ id: 3 }).del().excute('bill');
 queryer
   .update({ type: '1', time: '1564502400000', category: '5il79e11628', amount: '1500' })
-  .where({ time: '1564502400000' })
+  .where({ time: '1575129600000' })
   .excute('bill');
 
-console.log(
-  queryer.select('time').where({ category: '1bcddudhmh', time: '$MONTH_3' }).excute('bill'),
-);
-
-// console.log(table.indexsDocker.indexs[0].points['2']);
-
-// const titles = cate.shift();
-
-// const table = DB.new('cate', titles, 'id').initData(cate);
-// // 0,1,2,3,4,5,6
-// const queryer = new Queryer(DB);
-
-// console.log(queryer.select('time').where().excute('cate'));
+console.log(queryer.select('time').where({ time: '$MONTH_3' }).excute('bill'));
